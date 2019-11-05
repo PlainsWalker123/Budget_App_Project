@@ -109,7 +109,7 @@ var budgetController =(function () {
                 ID = 0;
             }
 
-            // Create new item based on 'inc' or 'exp' type
+            // Create new item based on 'inc' or 'exp' and label as the 'type' of data input
             if (type === 'exp') {
                 newItem = new Expense(ID, des, val);
             } else if (type === 'inc') {
@@ -122,7 +122,7 @@ var budgetController =(function () {
             // Display the item
             return newItem;
         },
-        testing : function (){                  // testing to see the data stored. so that we are doing it right ;)
+        testing : function (){                  // testing methods to see the data stored. so that we are doing it right ;)
             console.log(data);
         }
     }
@@ -138,16 +138,42 @@ var UIcontroller = (function () {
         inputDescription : '.add__description',
         inputValue : '.add__value',
         inputAddButton : '.add__btn',
+        incomeContainer : '.income__list',   // where we house the list of elements related to income from the inputs
+        expenseContainer : '.expenses__list',
 
     }
         return {
-            getInputs: function () {
+            getInputs: function () {            // logic to pull user input from DOM to be processed in later fns
                 return {
                     type: document.querySelector(domStrings.inputType).value,  // remember it has 2 options [income or expense]
                     description: document.querySelector(domStrings.inputDescription).value,
                     value: document.querySelector(domStrings.inputValue).value,
                 };
-            },                              // note the comma that is outside of the fn, making it a seperate object
+            },
+
+            addListItem: function (obj, type) {
+                    var html, newHtml, element;
+
+                // create some html with some placeholder text
+                    if (type === 'inc') {               // detemine the type of [income or exp] also had to put the html in a string. Had to be catious of the quotation mark type used [single vs. double]
+                    element = domStrings.incomeContainer;    // way to identify the type to map to the correct element on the DOM
+                    html ='<div class="item clearfix" id="income-%id%"> <div class="item__description">%description%</div><div class="right clearfix"><div class="item__value">%value%</div><div class="item__delete"> <button class="item__delete--btn"><i class="ion-ios-close-outline"></i></button></div></div></div>'
+                                                // note that the '%' is key in identifying where to replace text in the html. its a mapping marker
+                    } else if (type === 'exp') {
+                    element = domStrings.expenseContainer;
+                    html = '<div class="item clearfix" id="expense-%id%"><div class="item__description">%description%</div><div class="right clearfix"><div class="item__value">%value%</div><div class="item__percentage">21%</div><div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-close-outline"></i></button></div></div></div>'
+                    }
+
+                // replace the placeholder test with actual data
+                    newHtml = html.replace('%id%', obj.id);  // since html is a string we can use string related methods! in this case 'replace' finds text using the '%' as a marker and will replace w what you choose. since we are using a constructor for our input objects makes sense to use the (object that we will pass features in this case new item) fields
+                    newHtml = newHtml.replace('%description%', obj.description);
+                    newHtml = newHtml.replace('%value%', obj.value);      // note that we have to set 'newHtml' to the updated text bc otherwise we are just changing the html string
+
+                // insert HTML to DOM
+                    document.querySelector(element).insertAdjacentHtml('beforeend', newHtml);   // using the 'insertAdjacentHtml' to paste a large portion of text to DOM. In addition must specify where to place it using the methods placement types. we used 'beforeend' bc we want to build down after prior
+
+            },
+                                         // note the comma that is outside of the fn, making it a seperate object
             getDomStrings: function (){        // BC the domStrings is private so we need to expose in order to pull to App controller
                 return domStrings;
             }
@@ -172,7 +198,6 @@ var controller = (function (budgtCTRL, UIcNTRL) {
             });
     }
 
-
     var cntrlAddItem = function () {  // fn will run this code .. 'DRY'prinicpal
     // Breakdown of logic steps to achieve :       !!!!!!!!!!!!!!!!!!!!!!!!!
         var input, newItem;
@@ -183,9 +208,11 @@ var controller = (function (budgtCTRL, UIcNTRL) {
 
         // 2. Add the item to the Budget CONTROLLER
             newItem = budgetController.addItem(input.type, input.description, input.value);
-            return addItem();
+            return newItem;
 
-                // 3. Add the item to the UI CONTROLLER
+        // 3. Add the item to the UI CONTROLLER
+            UIcontroller.addListItem(newItem, input.type);       // amazing how this 'master' controller is waterfalling each logic made to make the code run. Really important to understand the fn arguments since they determine the type of data being read. Be vigilant and make sure to call the right one
+
                 // 4. Calculate the Budget
                 // 5. Display the Budget to UI
 
